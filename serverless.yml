@@ -56,14 +56,51 @@ custom:
     identitySource: method.request.header.Authorization
 
 functions:
+
   health:
     handler: src/handlers/health.manejar
     events:
-      - http:
-          path: /health
-          method: get
-          cors: true
-          authorizer: ${self:custom.autorizador}
+      - http: { path: "/health", method: get, cors: true, authorizer: "${self:custom.autorizador}" }
 
-  # TODO(sebastianperez72): tus endpoints van aqui. Minimo 5 protegidos.
-  # Copia el bloque de health y cambia path/method/handler.
+  listarRecursos:
+    handler: src/handlers/recursos.listar
+    description: Personas con su ocupacion · ?rol= ?sobreasignados=true ?disponibles=true
+    events:
+      - http: { path: "/recursos", method: get, cors: true, authorizer: "${self:custom.autorizador}" }
+
+  obtenerRecurso:
+    handler: src/handlers/recursos.obtener
+    events:
+      - http: { path: "/recursos/{id}", method: get, cors: true, authorizer: "${self:custom.autorizador}" }
+
+  crearRecurso:
+    handler: src/handlers/recursos.crear
+    events:
+      - http: { path: "/recursos", method: post, cors: true, authorizer: "${self:custom.autorizador}" }
+
+  actualizarRecurso:
+    handler: src/handlers/recursos.actualizar
+    events:
+      - http: { path: "/recursos/{id}", method: put, cors: true, authorizer: "${self:custom.autorizador}" }
+
+  carga:
+    handler: src/handlers/recursos.carga
+    description: La vista de Workload con el resumen del equipo
+    events:
+      - http: { path: "/carga", method: get, cors: true, authorizer: "${self:custom.autorizador}" }
+
+  listarAsignaciones:
+    handler: src/handlers/asignaciones.listar
+    events:
+      - http: { path: "/asignaciones", method: get, cors: true, authorizer: "${self:custom.autorizador}" }
+
+  crearAsignacion:
+    handler: src/handlers/asignaciones.crear
+    description: Publica recurso.asignado y, al cruzar el 100%, recurso.sobreasignado
+    events:
+      - http: { path: "/asignaciones", method: post, cors: true, authorizer: "${self:custom.autorizador}" }
+
+  liberarAsignacion:
+    handler: src/handlers/asignaciones.liberar
+    events:
+      - http: { path: "/asignaciones/{id}", method: delete, cors: true, authorizer: "${self:custom.autorizador}" }
