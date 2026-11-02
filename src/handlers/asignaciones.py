@@ -83,7 +83,7 @@ def crear(event, context):
             # FOR UPDATE sobre el recurso: dos asignaciones simultaneas
             # leerian la misma ocupacion y ninguna detectaria el exceso.
             cur.execute("""
-                SELECT id, nombre, costo_hora, capacidad_horas_semana
+                SELECT id, usuario_id, nombre, costo_hora, capacidad_horas_semana
                 FROM   recursos WHERE id = %s AND activo FOR UPDATE
             """, (c["recurso_id"],))
             recurso = cur.fetchone()
@@ -114,7 +114,7 @@ def crear(event, context):
     # ms-presupuestos escucha esto para proyectar el costo de horas-hombre
     publicar("recurso.asignado", tenant_id, {
         "recurso_id": str(recurso["id"]),
-        "usuario_id": None,
+        "usuario_id": str(recurso["usuario_id"]),
         "proyecto_id": int(c["proyecto_id"]),
         "asignacion_id": asignacion["id"],
         "porcentaje_dedicacion": dedicacion,
