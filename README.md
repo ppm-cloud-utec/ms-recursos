@@ -53,10 +53,12 @@ Este microservicio **solo publica eventos, no consume**: no tiene worker ni cola
 ## Desplegar
 
 ```bash
-pip install -r requirements.txt
-npm install
-sls deploy
+npm install            # instala Serverless v3 y el plugin de Python
+npx serverless deploy
 ```
+
+Necesita **Docker corriendo** si este microservicio usa RDS: el plugin compila
+`psycopg` contra Amazon Linux dentro de un contenedor.
 
 ## Cargar datos
 
