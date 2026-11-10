@@ -66,8 +66,45 @@ Necesita **Docker corriendo** si este microservicio usa RDS: el plugin compila
 export DB_HOST=<endpoint del RDS> DB_USER=ppm_recursos DB_PASSWORD=<de SSM>
 export DB_NAME=ppm_recursos
 python seed/generar.py --esquema
-python seed/generar.py            # 30,000 registros, 15% sobreasignados
+python seed/generar.py            # 30,000 registros, ~15% sobreasignados (re-ejecutable)
 python seed/generar.py --contar
+```
+
+## Probar en local (sin AWS)
+
+```bash
+docker run -d --name pg-recursos -p 5432:5432 -e POSTGRES_PASSWORD=x postgres:16
+docker exec pg-recursos psql -U postgres -c "CREATE DATABASE ppm_recursos"
+
+export DB_HOST=localhost DB_USER=postgres DB_PASSWORD=x DB_NAME=ppm_recursos
+pip install pytest 'psycopg[binary]'
+python seed/generar.py --esquema && python seed/generar.py
+pytest -q                          # 24 pruebas, SNS se simula
+```
+
+Las pruebas cubren los 9 endpoints, los errores 400/403/404/409, el aislamiento
+entre tenants y el flujo de la demo (70% → 130% publica `recurso.sobreasignado`).
+
+## Probar en AWS
+
+```bash
+URL=$(npx serverless info --verbose | awk '/ServiceEndpoint/ {print $2}')
+ID=<url de ms-identidad>
+TOKEN=$(curl -s -X POST $ID/login -H 'Content-Type: application/json' \
+  -d '{"tenant_id":"t-acme","email":"admin@acme.com.pe","password":"Demo1234"}' \
+  | python3 -c "import sys,json;print(json.load(sys.stdin)['datos']['token'])")
+H="Authorization: Bearer $TOKEN"
+
+curl -s -o /dev/null -w '%{http_code}\n' $URL/health      # 401 sin token
+curl -s $URL/health -H "$H"                                 # tenant t-acme
+curl -s "$URL/recursos?sobreasignados=true&limite=5" -H "$H"
+curl -s $URL/carga -H "$H" | python3 -c "import sys,json;print(json.load(sys.stdin)['meta'])"
+
+# La demo: alguien al 70% recibe 60% mas -> 130% y salta la alerta
+RID=$(curl -s "$URL/recursos?limite=300" -H "$H" | python3 -c \
+  "import sys,json;print(next(p['recurso_id'] for p in json.load(sys.stdin)['datos'] if p['ocupacion_pct']==70))")
+curl -s -X POST $URL/asignaciones -H "$H" -H 'Content-Type: application/json' \
+  -d "{\"recurso_id\":$RID,\"proyecto_id\":1,\"porcentaje_dedicacion\":60,\"fecha_inicio\":\"$(date +%F)\"}"
 ```
 
 ## Documentación

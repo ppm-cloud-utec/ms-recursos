@@ -70,7 +70,10 @@ Al crear una asignación:
 1. `SELECT ... FOR UPDATE` sobre el recurso. **Es imprescindible:** dos
    asignaciones simultáneas leerían la misma ocupación y ninguna detectaría el
    exceso.
-2. Se calcula la ocupación antes y después de insertar.
+2. Se calcula la ocupación antes y después de insertar, **en la fecha en que
+   la asignación empieza a pesar**: hoy si ya empezó, o su `fecha_inicio` si
+   es a futuro. Si se midiera siempre hoy, una asignación que arranca la
+   próxima semana nunca dispararía la alerta.
 3. Si **cruzó** el 100% (`despues > 100 >= antes`), se publica
    `recurso.sobreasignado`.
 
