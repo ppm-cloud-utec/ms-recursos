@@ -1,6 +1,8 @@
 """Forma unica de respuesta para los 6 microservicios."""
 import json
+from datetime import date, datetime
 from decimal import Decimal
+from uuid import UUID
 
 CORS = {
     "Access-Control-Allow-Origin": "*",
@@ -10,11 +12,20 @@ CORS = {
 
 
 class _Codificador(json.JSONEncoder):
-    """DynamoDB devuelve Decimal y json no sabe serializarlo."""
+    """Tipos que devuelve psycopg y que json no sabe serializar.
+
+    NUMERIC -> Decimal, DATE -> date, TIMESTAMPTZ -> datetime, UUID -> UUID.
+    Sin esto cualquier endpoint que devuelva una fila con fechas o el
+    usuario_id responde 500.
+    """
 
     def default(self, o):
         if isinstance(o, Decimal):
             return float(o) if o % 1 else int(o)
+        if isinstance(o, (datetime, date)):
+            return o.isoformat()
+        if isinstance(o, UUID):
+            return str(o)
         return super().default(o)
 
 
