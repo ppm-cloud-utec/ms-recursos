@@ -12,11 +12,13 @@ CORS = {
 
 
 class _Codificador(json.JSONEncoder):
-    """Tipos que devuelve psycopg y que json no sabe serializar.
+    """Serializa lo que json no sabe manejar solo.
 
-    NUMERIC -> Decimal, DATE -> date, TIMESTAMPTZ -> datetime, UUID -> UUID.
-    Sin esto cualquier endpoint que devuelva una fila con fechas o el
-    usuario_id responde 500.
+    - Decimal: lo devuelve DynamoDB. Se mantiene como entero cuando no tiene
+      parte decimal, para que un COUNT(*) de 3 no llegue al frontend como 3.0.
+    - date / datetime: los devuelve psycopg en las columnas DATE y TIMESTAMPTZ.
+      Sin esto, cualquier endpoint que exponga una fecha revienta con 502.
+    - UUID: los devuelve psycopg en las columnas UUID.
     """
 
     def default(self, o):
