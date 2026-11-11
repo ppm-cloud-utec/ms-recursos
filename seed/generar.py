@@ -103,6 +103,10 @@ def generar(tenant_id, perfil):
         with con.cursor() as cur:
             cur.execute(f"SET search_path TO {schema}")
 
+            # Re-ejecutable: sin esto, la segunda corrida choca con el UNIQUE
+            # de usuario_id (la semilla es fija) o duplica las asignaciones.
+            cur.execute("TRUNCATE asignaciones, recursos RESTART IDENTITY")
+
             # --- recursos ---
             lote = []
             for _ in range(N_RECURSOS):
@@ -134,17 +138,21 @@ def generar(tenant_id, perfil):
                 if random.random() < PCT_SOBREASIGNADOS:
                     objetivos[rid] = random.choice([110, 120, 130, 150, 180])
                 else:
-                    objetivos[rid] = random.choice([0, 20, 40, 50, 60, 80, 100])
+                    objetivos[rid] = random.choice([0, 20, 40, 50, 60, 70, 80, 100])
 
             lote = []
             for rid, objetivo in objetivos.items():
                 for dedicacion in reparto_dedicacion(objetivo):
                     pid = random.randint(1, perfil["proyectos"])
+                    # VIGENTE hoy: empezo hace 10-300 dias y termina dentro de
+                    # 30-300 dias. Si la fecha_fin pudiera caer en el pasado,
+                    # la vista `carga` no la contaria y el % de sobreasignados
+                    # quedaria muy por debajo del 15% prometido.
                     inicio = hoy - timedelta(days=random.randint(10, 300))
+                    fin = hoy + timedelta(days=random.randint(30, 300))
                     lote.append((
                         rid, pid, f"PRY-{tenant_id[2:5].upper()}-{pid:05d}",
-                        dedicacion, inicio,
-                        inicio + timedelta(days=random.randint(90, 400)), True,
+                        dedicacion, inicio, fin, True,
                     ))
 
             # El resto son asignaciones HISTORICAS (inactivas o ya terminadas),

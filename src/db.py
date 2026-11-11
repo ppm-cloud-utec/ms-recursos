@@ -15,6 +15,10 @@ SCHEMAS = {
 }
 
 
+class TenantDesconocido(ValueError):
+    """El token trae un tenant_id que no tiene schema en esta database."""
+
+
 def _dsn():
     return (
         f"host={os.environ['DB_HOST']} port=5432 "
@@ -33,7 +37,7 @@ def conexion(tenant_id):
     """
     schema = SCHEMAS.get(tenant_id)
     if not schema:
-        raise ValueError(f"tenant desconocido: {tenant_id}")
+        raise TenantDesconocido(f"tenant desconocido: {tenant_id}")
     con = psycopg.connect(_dsn())
     try:
         with con.cursor() as cur:
