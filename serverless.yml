@@ -42,6 +42,8 @@ package:
   patterns:
     - "!**"
     - "src/**"
+    # El aprovisionador lee este DDL para crear el schema de un tenant nuevo.
+    - "seed/esquema.sql"
 
 plugins:
   - serverless-python-requirements
@@ -115,6 +117,23 @@ functions:
     handler: src/handlers/asignaciones.liberar
     events:
       - http: { path: "/asignaciones/{id}", method: delete, cors: true, authorizer: "${self:custom.autorizador}" }
+
+  # ---------- Aprovisionamiento de tenants ----------
+  # Sin evento http: las invoca la maquina de estados
+  # ppm-aprovisionar-tenant. El alta de una organizacion es una operacion de
+  # plataforma, no una operacion dentro de un tenant, asi que no se expone
+  # por la API de negocio.
+  aprovisionarTenant:
+    handler: src/handlers/aprovisionar.aprovisionar
+    name: ms-recursos-${sls:stage}-aprovisionarTenant
+    description: Crea el schema del tenant y aplica el DDL de este servicio
+    timeout: 60
+
+  compensarTenant:
+    handler: src/handlers/aprovisionar.compensar
+    name: ms-recursos-${sls:stage}-compensarTenant
+    description: "Rollback del alta: elimina el schema del tenant"
+    timeout: 30
 
 resources:
   Resources:
