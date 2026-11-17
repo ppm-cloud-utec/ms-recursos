@@ -8,7 +8,7 @@ from contextlib import contextmanager
 
 import psycopg
 
-from src import tenants
+from src import secretos, tenants
 
 
 class TenantDesconocido(ValueError):
@@ -16,10 +16,18 @@ class TenantDesconocido(ValueError):
 
 
 def _dsn():
+    # Las credenciales se resuelven aqui, no al desplegar: antes la clave
+    # quedaba grabada como variable de entorno de la Lambda, visible en la
+    # consola. Ver src/secretos.py.
+    if os.environ.get("DB_PASSWORD"):  # solo para pruebas locales
+        _u, _p = os.environ["DB_USER"], os.environ["DB_PASSWORD"]
+    else:
+        _s = os.environ["DB_SECRETO"]
+        _u, _p = secretos.campo(_s, "username"), secretos.campo(_s, "password")
     return (
         f"host={os.environ['DB_HOST']} port=5432 "
         f"dbname={os.environ['DB_NAME']} "
-        f"user={os.environ['DB_USER']} password={os.environ['DB_PASSWORD']} "
+        f"user={_u} password={_p} "
         f"connect_timeout=5"
     )
 
