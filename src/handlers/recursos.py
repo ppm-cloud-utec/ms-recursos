@@ -1,9 +1,4 @@
-"""Personas, capacidad y asignaciones.
-
-Los "recursos" son los empleados de la organizacion vistos como capacidad de
-trabajo asignable: cuantas horas tienen por semana y a que proyectos estan
-dedicados. No es un directorio de perfiles.
-"""
+"""Personas, capacidad y asignaciones."""
 from psycopg.rows import dict_row
 
 from src import db, roles
@@ -69,10 +64,7 @@ def obtener(event, context):
 
 
 def _campos_recurso(c, parcial):
-    """Valida y normaliza los campos de un recurso.
-
-    parcial=True (PUT): solo valida lo que venga en el body.
-    """
+    """Valida y normaliza los campos de un recurso."""
     datos = {}
     if not parcial or "nombre" in c:
         datos["nombre"] = v.texto(c.get("nombre"), "nombre")
@@ -139,8 +131,6 @@ def actualizar(event, context):
         return error("SIN_CAMBIOS", f"Envia alguno de: {', '.join(permitidos)}")
     cambios = _campos_recurso(c, parcial=True)
 
-    # Los nombres de columna salen de la lista blanca `permitidos`, nunca
-    # del body, asi que el f-string no abre una inyeccion SQL.
     sets = ", ".join(f"{k} = %s" for k in cambios)
     with db.conexion(tenant_de(event)) as con:
         with con.cursor(row_factory=dict_row) as cur:

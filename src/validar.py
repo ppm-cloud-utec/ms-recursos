@@ -1,10 +1,4 @@
-"""Validacion de entradas y traduccion de errores a respuestas HTTP.
-
-Sin esto, un `/recursos/abc` o una fecha mal escrita llegan a PostgreSQL,
-revientan dentro de la Lambda y API Gateway devuelve un 502 sin cuerpo: el
-frontend no sabe que paso. Aqui se convierten en 400/404/409 con la forma de
-error del contrato comun.
-"""
+"""Validacion de entradas y traduccion de errores a respuestas HTTP."""
 import functools
 import json
 import logging
@@ -102,11 +96,7 @@ def booleano(valor, campo):
 
 
 def protegido(handler):
-    """Envuelve un handler HTTP: validacion -> 400, BD -> 400/409, resto -> 500.
-
-    El 500 sigue la forma comun {"ok": false, "error": {...}} y el detalle
-    queda en CloudWatch, no en la respuesta.
-    """
+    """Envuelve un handler HTTP: validacion -> 400, BD -> 400/409, resto -> 500."""
 
     @functools.wraps(handler)
     def envoltura(event, context):

@@ -29,7 +29,6 @@ def _asignar(rid, pct, inicio=None, fin=None, tenant="t-initech", rol="pm"):
     return asignaciones.crear(peticion(tenant, rol, body=body), None)
 
 
-# ------------------------------------------------------------------ lecturas
 def test_health_devuelve_el_tenant_del_token():
     r = health.manejar(peticion("t-globex"), None)
     assert r["statusCode"] == 200
@@ -76,7 +75,6 @@ def test_listar_asignaciones_por_recurso():
     assert all(a["recurso_id"] == rid for a in cuerpo(r)["datos"])
 
 
-# ------------------------------------------------------------------- errores
 @pytest.mark.parametrize("handler,ev", [
     (recursos.obtener, peticion(path={"id": "abc"})),
     (recursos.listar, peticion(query={"limite": "muchos"})),
@@ -110,7 +108,6 @@ def test_tenant_desconocido_403():
     assert recursos.carga(peticion("t-hackers"), None)["statusCode"] == 403
 
 
-# -------------------------------------------------------------- escrituras
 def test_crear_duplicado_409():
     uid = str(uuid.uuid4())
     body = {"usuario_id": uid, "nombre": "X", "rol_tecnico": "QA"}
@@ -162,8 +159,7 @@ def test_no_vuelve_a_alertar_si_ya_estaba_sobreasignado(sns):
 
 
 def test_asignacion_futura_tambien_alerta(sns):
-    """Antes solo se media HOY: una asignacion que empieza la proxima semana
-    nunca disparaba la alerta."""
+    """Antes solo se media HOY: una asignacion que empieza la proxima semana nunca disparaba la alerta."""
     rec = _nuevo_recurso()
     _asignar(rec["id"], 80)
     sns.publicados.clear()

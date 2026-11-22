@@ -1,19 +1,4 @@
-"""Pruebas locales de ms-recursos contra un PostgreSQL real.
-
-No necesitan AWS: SNS se reemplaza por un falso que guarda lo publicado.
-
-    # 1. Un Postgres local (Docker es lo mas rapido)
-    docker run -d --name pg-recursos -p 5432:5432 -e POSTGRES_PASSWORD=x postgres:16
-    docker exec pg-recursos psql -U postgres -c "CREATE DATABASE ppm_recursos"
-
-    # 2. Esquema y datos
-    export DB_HOST=localhost DB_USER=postgres DB_PASSWORD=x DB_NAME=ppm_recursos
-    python seed/generar.py --esquema && python seed/generar.py
-
-    # 3. Pruebas
-    pip install pytest 'psycopg[binary]'
-    pytest -q
-"""
+"""Pruebas locales de ms-recursos contra un PostgreSQL real."""
 import json
 import os
 import sys
@@ -46,7 +31,6 @@ class _SnsFalso:
 
 SNS = _SnsFalso()
 
-# boto3 falso: la Lambda lo trae en el runtime, en local puede no estar
 _boto3 = types.ModuleType("boto3")
 _boto3.client = lambda *a, **k: SNS
 _boto3.resource = lambda *a, **k: types.SimpleNamespace(Table=lambda *_: None)

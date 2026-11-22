@@ -1,20 +1,5 @@
 #!/usr/bin/env python3
-"""Carga 30,000 registros en ms-recursos, repartidos en 3 tenants.
-
-    python seed/generar.py --esquema
-    python seed/generar.py
-    python seed/generar.py --contar
-
-Reparto por tenant (10,000):
-    recursos         800
-    asignaciones   9,200
-                  ------
-                  10,000
-
-Se deja a proposito un 15% de personas SOBREASIGNADAS (por encima del 100%),
-porque la vista de Workload y la alerta de sobreasignacion son funciones del
-producto que hay que poder mostrar en la demo con datos reales.
-"""
+"""Carga 30,000 registros en ms-recursos, repartidos en 3 tenants."""
 import os
 import sys
 import uuid
@@ -80,11 +65,7 @@ def aplicar_esquema():
 
 
 def reparto_dedicacion(objetivo):
-    """Parte un porcentaje objetivo en asignaciones de 10 a 100.
-
-    Un objetivo de 130 puede salir como 100+30 o como 60+50+20: asi la vista
-    de carga tiene personas con 1, 2 y 3 proyectos a la vez.
-    """
+    """Parte un porcentaje objetivo en asignaciones de 10 a 100."""
     partes = []
     restante = objetivo
     while restante > 0:
@@ -103,8 +84,6 @@ def generar(tenant_id, perfil):
         with con.cursor() as cur:
             cur.execute(f"SET search_path TO {schema}")
 
-            # Re-ejecutable: sin esto, la segunda corrida choca con el UNIQUE
-            # de usuario_id (la semilla es fija) o duplica las asignaciones.
             cur.execute("TRUNCATE asignaciones, recursos RESTART IDENTITY")
 
             # --- recursos ---
@@ -130,9 +109,6 @@ def generar(tenant_id, perfil):
             cur.execute("SELECT id FROM recursos WHERE activo ORDER BY id")
             ids = [f[0] for f in cur.fetchall()]
 
-            # --- asignaciones ---
-            # Primero se reparte una ocupacion objetivo por persona, de modo
-            # que un 15% quede por encima del 100%.
             objetivos = {}
             for rid in ids:
                 if random.random() < PCT_SOBREASIGNADOS:
@@ -144,10 +120,6 @@ def generar(tenant_id, perfil):
             for rid, objetivo in objetivos.items():
                 for dedicacion in reparto_dedicacion(objetivo):
                     pid = random.randint(1, perfil["proyectos"])
-                    # VIGENTE hoy: empezo hace 10-300 dias y termina dentro de
-                    # 30-300 dias. Si la fecha_fin pudiera caer en el pasado,
-                    # la vista `carga` no la contaria y el % de sobreasignados
-                    # quedaria muy por debajo del 15% prometido.
                     inicio = hoy - timedelta(days=random.randint(10, 300))
                     fin = hoy + timedelta(days=random.randint(30, 300))
                     lote.append((
@@ -155,8 +127,6 @@ def generar(tenant_id, perfil):
                         dedicacion, inicio, fin, True,
                     ))
 
-            # El resto son asignaciones HISTORICAS (inactivas o ya terminadas),
-            # que aportan volumen sin alterar la ocupacion de hoy.
             while len(lote) < N_ASIGNACIONES:
                 rid = random.choice(ids)
                 pid = random.randint(1, perfil["proyectos"])
